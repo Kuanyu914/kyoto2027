@@ -313,6 +313,39 @@
     .pb-content-safe { padding-bottom: calc(98px + env(safe-area-inset-bottom)); }
     .touch-target { min-height: 44px; }
 
+    /* Header: brand row folds away while scrolling, day row stays */
+    .header-collapsible { overflow: hidden; max-height: 64px; transition: max-height 0.25s ease, opacity 0.2s ease; }
+    #topWeatherBar.is-collapsed .header-collapsible { max-height: 0; opacity: 0; }
+    #topWeatherBar.is-collapsed > #dayWeatherRow { margin-top: 0; }
+
+    /* Transport strip between itinerary cards */
+    .leg-strip {
+      display: flex; align-items: flex-start; gap: 6px;
+      padding: 6px 10px; border-radius: 12px;
+      border: 1px dashed var(--border-card);
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-size: 11.5px; line-height: 1.45;
+    }
+
+    /* Optional stops: dashed + faded so they read as skippable */
+    .card-optional { border-style: dashed !important; border-width: 1.5px !important; background: var(--bg-page) !important; box-shadow: none !important; }
+
+    /* Live "now / next" markers during the trip */
+    .card-now { box-shadow: 0 0 0 2px var(--accent), var(--shadow-card); }
+    .now-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 1px 8px; border-radius: 999px;
+      background: var(--accent); color: #fff;
+      font-size: 10.5px; font-weight: 700;
+    }
+    .next-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 1px 8px; border-radius: 999px;
+      border: 1px solid var(--accent-border); color: var(--accent-text);
+      font-size: 10.5px; font-weight: 700;
+    }
+
     .segment-container {
       background-color: var(--bg-segment);
       border: 1px solid var(--border-card);
@@ -536,8 +569,8 @@
          ① TOP STICKY HEADER: 品牌標題 + 加入主畫面 + 晴雨雙分段切換 Bar
          ========================================================= -->
     <header id="topWeatherBar" class="sticky top-0 z-40 ios-glass border-b border-[var(--border-card)] pt-safe pb-2.5 px-3.5 space-y-2">
-      <!-- Brand Row -->
-      <div class="flex items-center justify-between gap-2">
+      <!-- Brand Row (collapses when scrolling) -->
+      <div id="headerBrandRow" class="header-collapsible flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
           <div class="hanko-seal select-none" aria-hidden="true">京</div>
           <div class="min-w-0">
@@ -577,30 +610,20 @@
         </div>
       </div>
 
-      <!-- Sunny / Rainy Segmented Switch Bar -->
-      <div class="segment-container relative grid grid-cols-2 p-1 rounded-2xl select-none" role="tablist" aria-label="晴天與雨天行程切換">
-        <div id="weatherPill" class="segment-pill absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl pointer-events-none"></div>
-
+      <!-- Day selector + compact sunny/rainy toggle (itinerary & map tabs only) -->
+      <div id="dayWeatherRow" class="flex items-stretch gap-1.5">
+        <div id="dayTabsContainer" class="flex-1 grid grid-cols-5 gap-1" aria-label="每日行程選擇">
+          <!-- Rendered dynamically -->
+        </div>
         <button
-          id="btnSunny"
+          id="weatherToggleBtn"
           type="button"
-          onclick="setWeather('sunny')"
-          class="relative z-10 flex items-center justify-center gap-1.5 min-h-[36px] text-[13px] font-semibold rounded-xl transition-colors duration-200"
-          aria-selected="true"
+          onclick="setWeather(state.weather === 'sunny' ? 'rainy' : 'sunny')"
+          class="shrink-0 w-[48px] min-h-[48px] rounded-2xl border border-[var(--accent-border)] bg-[var(--bg-card)] flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
+          aria-label="切換晴天／雨天行程"
         >
-          <span>☀️</span>
-          <span>晴天原定行程</span>
-        </button>
-
-        <button
-          id="btnRainy"
-          type="button"
-          onclick="setWeather('rainy')"
-          class="relative z-10 flex items-center justify-center gap-1.5 min-h-[36px] text-[13px] font-semibold rounded-xl transition-colors duration-200"
-          aria-selected="false"
-        >
-          <span>🌧️</span>
-          <span>雨天室內備案</span>
+          <span id="weatherToggleIcon" class="text-[16px] leading-none">☀️</span>
+          <span id="weatherToggleText" class="text-[10px] font-bold text-[var(--text-primary)] leading-none">晴天</span>
         </button>
       </div>
     </header>
@@ -683,26 +706,24 @@
         </div>
       </section>
 
-      <!-- =========================================================
-           ③ 5-DAY SELECTOR BAR (Sticky dynamically below header)
-           ========================================================= -->
-      <nav id="daySelectorBar" class="sticky z-30 ios-glass px-3 py-2 border-b border-[var(--border-card)]" style="top: 108px;" aria-label="每日行程選擇">
-        <div id="dayTabsContainer" class="grid grid-cols-5 gap-1.5">
-          <!-- Rendered dynamically -->
-        </div>
-      </nav>
 
       <!-- =========================================================
-           ④ DAILY TIMELINE ITINERARY (Tap card or 選項 -> Action Sheet)
+           ④ DAILY TIMELINE ITINERARY (tap card = map, buttons = navigate / food)
            ========================================================= -->
       <section id="itineraryContent" class="px-3.5 pt-3.5 space-y-3.5">
         <!-- Rendered dynamically -->
       </section>
 
+    </main>
+
+    <!-- =========================================================
+         TAB 2 VIEW: 🗺️ 全螢幕地圖
+         ========================================================= -->
+    <main id="view-map" class="hidden px-3.5 pt-3 pb-content-safe">
       <!-- =========================================================
-           ⑥ INTERACTIVE DARK MAP SECTION (Always at bottom of Itinerary)
+           ⑥ INTERACTIVE MAP (own full-screen tab)
            ========================================================= -->
-      <section id="mapSection" class="px-3.5 pt-5 pb-2 scroll-mt-[185px]">
+      <section id="mapSection" class="pt-0.5">
         <div id="mapCardWrapper" class="lacquer-card rounded-[24px] overflow-hidden">
           <!-- Map Header -->
           <div class="p-4 pb-3 border-b border-[var(--border-subtle)] space-y-2.5">
@@ -1116,7 +1137,7 @@
     <!-- =========================================================
          ⑦ FIXED BOTTOM iOS NAVIGATION BAR (4 TABS)
          ========================================================= -->
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] z-40 ios-glass border-t border-[var(--border-card)] pt-1.5 pb-safe-nav px-2.5">
+    <nav id="bottomTabNav" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] z-40 ios-glass border-t border-[var(--border-card)] pt-1.5 pb-safe-nav px-2.5">
       <div class="grid grid-cols-5 gap-1">
         <button
           id="tabBtn-itinerary"
@@ -1921,6 +1942,7 @@
             },
             {
               id: "d1s2",
+              leg: "🛂 入境領行李 → 步行至 JR 關西機場站",
               time: "13:20–16:10",
               title: "入境領行李 → 搭 JR HARUKA 直達京都站",
               desc: "預留 13:20–14:40 入境並前往 JR 車站，約 14:45–16:10 搭乘特急 HARUKA 直抵京都站（約 75–85 分鐘）。",
@@ -1933,6 +1955,7 @@
             },
             {
               id: "d1s3",
+              leg: "🚇 地下鐵烏丸線 1 站至五條站（1 號出口），大件行李可改搭計程車",
               time: "16:10–17:00",
               title: "THE BLOSSOM KYOTO Check-in 放行李",
               desc: "搭地下鐵烏丸線一站至五條站（1 號出口步行），或帶大件行李直接搭計程車抵達辦理入住。",
@@ -1945,6 +1968,7 @@
             },
             {
               id: "d1s4",
+              leg: "🚃 地下鐵回京都站 → JR 奈良線普通車至稻荷站（車程約 5 分鐘），或計程車",
               time: "17:00–18:35",
               title: "伏見稻荷大社・本殿與千本鳥居前段",
               desc: "轉乘 JR 奈良線至稻荷站（車程約 5 分鐘）或計程車。2 月天黑早，僅走照明良好的本殿及千本鳥居前段拍照參拜，不必登頂。",
@@ -1957,6 +1981,7 @@
             },
             {
               id: "d1s5",
+              leg: "🚃 JR 奈良線回京都站",
               time: "18:35–20:10",
               title: "返回京都站 Porta 或五條周邊晚餐",
               desc: "不綁定排隊名店，可於京都站 Porta 地下街或飯店附近悠閒享用第一頓京都晚餐。",
@@ -1969,6 +1994,7 @@
             },
             {
               id: "d1s6",
+              leg: "🚇 地下鐵烏丸線京都站 → 五條站",
               time: "20:10–21:00",
               title: "飯店附近超市補貨・21:00 回飯店休息",
               desc: "採買飲水、早餐與零食，返回 THE BLOSSOM KYOTO 好好休息。",
@@ -2009,6 +2035,7 @@
             },
             {
               id: "d1r2",
+              leg: "🚕 京都站計程車招呼站直達飯店（約 5–7 分鐘）",
               time: "16:10–17:00",
               title: "計程車直達 THE BLOSSOM KYOTO Check-in",
               desc: "雨天帶大型行李建議直接從京都站計程車乘車處直達飯店門口免淋雨。",
@@ -2021,6 +2048,7 @@
             },
             {
               id: "d1r3",
+              leg: "🚇 地下鐵烏丸線五條站 → 京都站 1 站，出站連通地下街",
               time: "17:15–19:45",
               title: "京都站 Porta 地下街・拉麵小路／伊勢丹晚餐",
               desc: "搭地下鐵烏丸線 1 站直連京都站 Porta，全程免撐傘享天婦羅、拉麵或迴轉壽司。",
@@ -2033,6 +2061,7 @@
             },
             {
               id: "d1r4",
+              leg: "🚇 地下鐵烏丸線京都站 → 五條站",
               time: "20:00–20:45",
               title: "五條周邊超市補貨・早點回飯店休息",
               desc: "備齊飲水、早餐、暖暖包與透明傘，回飯店泡澡休息。",
@@ -2066,12 +2095,14 @@
         sunny: {
           title: "清水寺・東山・祇園",
           route: "飯店 → 清水寺 → 三年坂 → 二年坂 → 八坂庚申堂／高台寺 → 八坂神社 → 祇園花見小路 → 鴨川河原町",
+          endLeg: "🚇 回飯店：四條站搭地下鐵烏丸線 1 站至五條站",
           items: [
             {
               id: "d2s1",
+              leg: "🚌 07:30 飯店出發：烏丸五条搭市巴士 80 系統至五條坂／清水道（班次少，先查時刻），或計程車約 10 分鐘，下車後步行上坡",
               time: "08:00–09:20",
-              title: "清水寺・清水舞台（07:30 飯店出發）",
-              desc: "烏丸五条搭市巴士 80 系統至五條坂／清水道（班次少，先查時刻），或計程車約 10 分鐘，下車後步行上坡。若 D1 未去伏見稻荷，改 07:00 先去伏見稻荷、約 09:30 抵清水寺。",
+              title: "清水寺・清水舞台",
+              desc: "參拜世界遺產清水舞台。若 D1 未去伏見稻荷，改 07:00 先去伏見稻荷、約 09:30 抵清水寺。",
               tag: "⛩️ 世界遺產",
               lat: 34.9949,
               lng: 135.7850,
@@ -2083,6 +2114,7 @@
             },
             {
               id: "d2s2",
+              leg: "🚶 沿參道步行下坡",
               time: "09:20–10:40",
               title: "三年坂、二年坂拍照與逛小店",
               desc: "沿著古樸石板階梯慢步下山，拍照並逛京燒、抹茶與和風小物店。",
@@ -2095,6 +2127,7 @@
             },
             {
               id: "d2s3",
+              leg: "🚶 步行",
               time: "10:40–11:20",
               title: "八坂庚申堂、高台寺周邊（可選）",
               desc: "色彩繽紛的祈福猿球名所，或順路漫步高台寺周邊寧靜小徑。",
@@ -2107,9 +2140,10 @@
             },
             {
               id: "d2s4",
+              leg: "🚶 順向下坡步行往祇園",
               time: "11:30–12:40",
               title: "東山或祇園午餐",
-              desc: "可點旁邊「選項」查看清水／祇園高分餐廳（京都勝牛、音羽茶寮、炭火鰻、鶏と祇園等）。⚠️ 今天週三：和龍海鮮丼、Masaichi 公休。",
+              desc: "點「🍜 附近美食」查看清水／祇園高分餐廳（京都勝牛、音羽茶寮、炭火鰻、鶏と祇園等）。⚠️ 今天週三：和龍海鮮丼、Masaichi 公休。",
               tag: "🍱 午餐",
               lat: 35.0018,
               lng: 135.7775,
@@ -2119,6 +2153,7 @@
             },
             {
               id: "d2s5",
+              leg: "🚶 步行",
               time: "12:50–13:30",
               title: "八坂神社",
               desc: "參拜朱紅西樓門與本殿，祈求良緣與旅途平安。",
@@ -2131,6 +2166,7 @@
             },
             {
               id: "d2s6",
+              leg: "🚶 步行至花見小路",
               time: "13:30–14:20",
               title: "祇園花見小路散策",
               desc: "感受傳統町家茶屋風情，注意私有道路及禁拍標示，勿追逐攔阻藝舞妓。",
@@ -2143,6 +2179,7 @@
             },
             {
               id: "d2s7",
+              leg: "🚶 步行至四條大橋",
               time: "14:30–19:00",
               title: "鴨川四條大橋・河原町散策與晚餐",
               desc: "沿鴨川喝咖啡慢步（大量購物留待 DAY 4），17:30–19:00 於祇園／河原町晚餐後回飯店。",
@@ -2173,8 +2210,9 @@
           items: [
             {
               id: "d2r1",
+              leg: "🚕 08:45 飯店搭計程車直達",
               time: "09:10–10:25",
-              title: "三十三間堂（08:45 飯店搭計程車直達）",
+              title: "三十三間堂",
               desc: "壯觀的 1001 尊金色千手觀音全在室內木造本堂，雨天必訪國寶名所。",
               tag: "🏛️ 全室內",
               lat: 34.9879,
@@ -2185,6 +2223,7 @@
             },
             {
               id: "d2r2",
+              leg: "🚶 正對面，步行即到",
               time: "10:30–12:00",
               title: "京都國立博物館",
               desc: "就在三十三間堂正對面！室內悠閒欣賞京都千年佛教美術與特展。",
@@ -2197,6 +2236,7 @@
             },
             {
               id: "d2r3",
+              leg: "🚕 計程車移至四條河原町",
               time: "12:15–15:30",
               title: "京都高島屋 S.C. 午餐・四條地下連通道避雨逛街",
               desc: "搭計程車移至四條河原町，於室內百貨用餐並經地下連通道乾爽慢逛。",
@@ -2209,6 +2249,7 @@
             },
             {
               id: "d2r4",
+              leg: "🚶 沿四條通步行至祇園",
               time: "15:30–19:30",
               title: "祇園抹茶茶寮歇腳・河原町室內晚餐",
               desc: "在細雨氛圍中品嚐熱抹茶與和菓子，晚餐於祇園／河原町享暖胃拉麵或鰻魚飯後回飯店。",
@@ -2257,6 +2298,7 @@
             },
             {
               id: "d3s2",
+              leg: "🚶 嵯峨嵐山站出站步行至竹林",
               time: "09:20–10:30",
               title: "嵐山竹林小徑 → 野宮神社",
               desc: "漫步翠綠竹林步道，並順遊以黑木鳥居與良緣御守聞名的野宮神社。",
@@ -2271,6 +2313,7 @@
             },
             {
               id: "d3s3",
+              leg: "🚶 步行至天龍寺",
               time: "10:40–11:50",
               title: "天龍寺庭園（曹源池）",
               desc: "欣賞世界遺產曹源池庭園與嵐山借景，視現場開放入口規劃參觀方向。",
@@ -2285,6 +2328,7 @@
             },
             {
               id: "d3s4",
+              leg: "🚶 步行至嵐山大街、渡月橋",
               time: "12:00–13:50",
               title: "嵐山大街午餐・渡月橋與桂川河岸散步",
               desc: "品嚐和牛、炸牛排或渡月橋畔手打蕎麥麵よしむら，餐後沿桂川河岸散步拍照。",
@@ -2297,6 +2341,7 @@
             },
             {
               id: "d3s5",
+              leg: "🚶 步行至渡月橋旁乘船處",
               time: "14:00–15:40",
               title: "嵐山屋形船（可選）＆嵐山大街甜點咖啡",
               desc: "渡月橋旁約 30 分鐘短程遊覽船（視冬季營運與天候，備妥日圓現金），隨後逛嵐山大街吃甜點買伴手禮。",
@@ -2311,6 +2356,7 @@
             },
             {
               id: "d3s6",
+              leg: "🚶 步行至嵐電嵐山站",
               time: "15:40–17:00",
               title: "嵐電嵐山站・友禪光林 → 搭嵐電回四條大宮",
               desc: "欣賞和服柱裝置藝術「友禪光林」，搭嵐電直達四條大宮（免換車）。（備選方案 B：欲順遊仁和寺／龍安寺／妙心寺，務必於 14:15 提前搭嵐電至帷子ノ辻轉北野線）",
@@ -2325,6 +2371,7 @@
             },
             {
               id: "d3s7",
+              leg: "🚋 嵐電嵐山站直達四條大宮（同一條線，免換車）",
               time: "18:00–20:00",
               title: "四條大宮轉市區晚餐・20:00 回飯店休息",
               desc: "搭嵐電抵四條大宮站，轉乘或步行赴京都市區享用晚餐後返回飯店。",
@@ -2366,6 +2413,7 @@
             },
             {
               id: "d3r2",
+              leg: "🚶 步行至天龍寺",
               time: "09:45–11:30",
               title: "天龍寺大方丈室內迴廊・坐賞煙雨曹源池",
               desc: "於木造榻榻米室內迴廊靜坐遠眺雲霧繚繞的曹源池，感受雨中水墨禪意。",
@@ -2378,6 +2426,7 @@
             },
             {
               id: "d3r3",
+              leg: "🚶 天龍寺步行至福田美術館約 6–8 分鐘",
               time: "11:45–15:00",
               title: "嵐山室內午餐 → 福田美術館看展兼賞渡月橋雨景",
               desc: "於嵐山大街享用熱湯料理後，至桂川畔福田美術館看展，在落地窗咖啡廳靜看雨中渡月橋。",
@@ -2390,6 +2439,7 @@
             },
             {
               id: "d3r4",
+              leg: "🚃 JR 嵯峨野線免轉車至梅小路京都西站",
               time: "15:15–19:30",
               title: "京都鐵道博物館（可選）→ 京都站室內晚餐",
               desc: "搭 JR 嵯峨野線免轉車直達梅小路京都西站暢遊全室內鐵道博物館，晚間至京都站用餐後回飯店。",
@@ -2437,6 +2487,7 @@
             },
             {
               id: "d4s2",
+              leg: "🚕 計程車約 10 分鐘",
               time: "11:00–12:00",
               title: "搭計程車前往 OMO5 京都三條寄放行李",
               desc: "直達河原町三條先寄放行李，並確認下午正式 Check-in 時間。",
@@ -2449,9 +2500,10 @@
             },
             {
               id: "d4s3",
+              leg: "🚶 步行至錦市場",
               time: "12:00–13:30",
               title: "錦市場：小吃、午餐、伴手禮",
-              desc: "先逛以免部分店家傍晚打烊！點「選項」看 HIROSHIGE 牛雜丼／和牛壽喜燒、錦活鮨與冨美家評價。食物請於指定區食用避免邊走邊吃。",
+              desc: "先逛以免部分店家傍晚打烊！點「🍜 附近美食」看 HIROSHIGE 牛雜丼／和牛壽喜燒、錦活鮨與冨美家評價。食物請於指定區食用避免邊走邊吃。",
               tag: "🍡 錦市場",
               lat: 35.0050,
               lng: 135.7649,
@@ -2463,6 +2515,7 @@
             },
             {
               id: "d4s4",
+              leg: "🚶 步行至寺町京極／新京極",
               time: "13:30–16:30",
               title: "寺町京極・新京極商店街 → 回 OMO5 入住卸貨",
               desc: "逛藥妝、雜貨與扭蛋，約 15:30 回飯店 Check-in 休息並放下戰利品。",
@@ -2475,6 +2528,7 @@
             },
             {
               id: "d4s5",
+              leg: "🚶 步行至四條河原町",
               time: "16:30–18:30",
               title: "四條河原町・京都高島屋 S.C.・藤井大丸・藥妝",
               desc: "集中採買百貨專櫃、選物與藥妝，記得隨身攜帶護照辦理免稅並收好收據。",
@@ -2487,6 +2541,7 @@
             },
             {
               id: "d4s6",
+              leg: "🚶 步行至先斗町",
               time: "19:00–21:00",
               title: "先斗町／河原町晚餐・21:00 回 OMO5 整理行李",
               desc: "體驗先斗町紅燈籠巷弄晚餐（京都勝牛總店、神戶牛鐵板燒、おめん烏龍麵等），21:00 回飯店打包。",
@@ -2514,6 +2569,7 @@
           items: [
             {
               id: "d4r1",
+              leg: "🚕 退房後計程車直達 OMO5（行李不淋雨）",
               time: "11:00–12:00",
               title: "退房搭計程車直達 OMO5 京都三條寄行李",
               desc: "從飯店門口直達 OMO5 門口寄放行李，行李箱完全不會淋濕。",
@@ -2526,6 +2582,7 @@
             },
             {
               id: "d4r2",
+              leg: "🚶 走寺町／新京極頂棚商店街",
               time: "12:00–15:30",
               title: "錦市場（全頂棚）午餐 → 寺町／新京極拱廊逛街",
               desc: "全程走頂棚商店街吃熱騰騰和牛壽喜燒、鍋燒烏龍麵並逛藥妝扭蛋，免收折雨傘。",
@@ -2538,6 +2595,7 @@
             },
             {
               id: "d4r3",
+              leg: "🚶 回 OMO5 放東西，再走拱廊與四條地下道",
               time: "15:30–18:45",
               title: "回 OMO5 進房卸貨 → 京都 BAL／高島屋／藤井大丸",
               desc: "利用四條地下道連通各百貨商場，乾爽逛街補齊藥妝與服飾雜貨。",
@@ -2550,6 +2608,7 @@
             },
             {
               id: "d4r4",
+              leg: "🚶 步行至三條／河原町",
               time: "19:00–21:00",
               title: "三條／河原町室內晚餐・回 OMO5 整理打包",
               desc: "選擇商場或拱廊內餐廳享晚餐，21:00 回房將液體乳霜妥善收入托運箱。",
@@ -2598,6 +2657,7 @@
             },
             {
               id: "d5s2",
+              leg: "🚕 計程車（有大型行李最方便），或地下鐵東西線京都市役所前 → 烏丸御池轉烏丸線至京都站",
               time: "09:30–10:30",
               title: "京都站寄放大型行李・確認 HARUKA 車票",
               desc: "搭計程車（最方便）或地下鐵至京都站。週六大型置物櫃易滿，優先選人工行李寄放櫃台並拍照記位置。",
@@ -2610,6 +2670,7 @@
             },
             {
               id: "d5s3",
+              leg: "🚶 八條口正對面，步行",
               time: "10:30–12:00",
               title: "京都 AVANTI 唐吉訶德・周邊藥妝採買",
               desc: "位於京都站八條口正對面，補齊最後伴手禮、零食與藥妝。",
@@ -2622,6 +2683,7 @@
             },
             {
               id: "d5s4",
+              leg: "🚶 步行至 AEON MALL KYOTO",
               time: "12:00–13:45",
               title: "八條口午餐 → AEON MALL KYOTO 最後補買",
               desc: "可選壽司のむさし、Tententen 天婦羅或 YAYOI軒；若上午排隊耗時過久則取消 AEON，優先保障搭車時間。",
@@ -2634,6 +2696,7 @@
             },
             {
               id: "d5s5",
+              leg: "🚶 步行回京都站領行李",
               time: "13:45–14:45",
               title: "京都站領行李整理 → 約 14:30–14:45 搭 HARUKA",
               desc: "領行李把液體收進托運箱，提早進站找月台搭乘已訂 JR HARUKA 前往關西機場。",
@@ -2646,6 +2709,7 @@
             },
             {
               id: "d5s6",
+              leg: "🚄 JR 特急 HARUKA 至關西機場",
               time: "15:50–19:05",
               title: "抵關西機場 → 華航 CI173 約 19:05 起飛返台",
               desc: "約 15:50–16:10 抵達關西機場，預留 3 小時報到、托運、出境與免稅採買，平安搭機返台（以電子機票為準）。",
@@ -2688,6 +2752,7 @@
             },
             {
               id: "d5r2",
+              leg: "🚕 OMO5 代叫計程車，直達京都站八條口有棚下車處",
               time: "09:20–10:15",
               title: "計程車抵京都站八條口有棚下車處・人工寄行李",
               desc: "將行李寄於站內人工櫃台並確認 HARUKA 車票與雨天運行狀況。",
@@ -2700,6 +2765,7 @@
             },
             {
               id: "d5r3",
+              leg: "🚶 八條口地下連通道",
               time: "10:15–11:50",
               title: "地下連通道直抵京都 AVANTI 唐吉訶德",
               desc: "從八條口地下連通道直入 AVANTI，全程零淋雨補齊唐吉訶德與藥妝。",
@@ -2712,6 +2778,7 @@
             },
             {
               id: "d5r4",
+              leg: "🚶 回京都站 Porta／伊勢丹",
               time: "11:50–13:45",
               title: "京都站 Porta／伊勢丹全站內午餐與伴手禮",
               desc: "取消需走戶外的 AEON！留在站內 Porta、拉麵小路或八條口吃壽司、天婦羅並最後採買。",
@@ -2724,6 +2791,7 @@
             },
             {
               id: "d5r5",
+              leg: "🧳 回寄放處領行李，進站",
               time: "13:45–19:05",
               title: "提早領行李搭 HARUKA → 關西機場 CI173 返台",
               desc: "提早進站確認 JR 運行無延誤，搭約 14:30–14:45 HARUKA 穩妥抵達機場辦理報到出境。",
@@ -2838,8 +2906,51 @@
     const TRIP_START_DAY = new Date("2027-02-02T00:00:00+08:00").getTime();
     const TRIP_END_TIME = new Date("2027-02-06T23:59:59+08:00").getTime();
 
+    /* "Now" in Japan time. For testing, add ?now=2027-02-03T10:30 (read as Japan time). */
+    function getNowMs() {
+      try {
+        const q = new URLSearchParams(location.search).get("now");
+        if (q) {
+          const t = new Date(q + (/[zZ]|[+-]\d\d:\d\d$/.test(q) ? "" : "+09:00")).getTime();
+          if (!isNaN(t)) return t;
+        }
+      } catch (e) {}
+      return Date.now();
+    }
+    function getJapanParts() {
+      const d = new Date(getNowMs() + 9 * 3600000); // shift to JST, read with UTC getters
+      return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, day: d.getUTCDate(), mins: d.getUTCHours() * 60 + d.getUTCMinutes() };
+    }
+    /* Trip day 1-5 if today (Japan time) is 2027/02/02-02/06, else null */
+    function getTripDayToday() {
+      const p = getJapanParts();
+      if (p.y === 2027 && p.m === 2 && p.day >= 2 && p.day <= 6) return p.day - 1;
+      return null;
+    }
+    /* "08:00–09:20" -> {start, end} in minutes; single time -> 60-minute window */
+    function parseTimeRange(t) {
+      const m = String(t || "").match(/(\d{1,2}):(\d{2})(?:\s*[–-]\s*(\d{1,2}):(\d{2}))?/);
+      if (!m) return null;
+      const start = +m[1] * 60 + +m[2];
+      const end = m[3] ? +m[3] * 60 + +m[4] : start + 60;
+      return { start, end };
+    }
+    /* For the shown day: id of the stop happening now, and of the next one */
+    function getLiveStops(items) {
+      if (getTripDayToday() !== state.day) return { nowId: null, nextId: null };
+      const mins = getJapanParts().mins;
+      let nowId = null, nextId = null;
+      for (const it of items) {
+        const r = parseTimeRange(it.time);
+        if (!r) continue;
+        if (mins >= r.start && mins < r.end) nowId = it.id;
+        else if (r.start > mins && !nextId) nextId = it.id;
+      }
+      return { nowId, nextId };
+    }
+
     function updateCountdown() {
-      const now = Date.now();
+      const now = getNowMs();
       const cdBox = document.getElementById("countdownBox");
       const stBox = document.getElementById("tripStatusBox");
       const stText = document.getElementById("tripStatusText");
@@ -2880,26 +2991,17 @@
       const themeMeta = document.getElementById("themeColorMeta");
       updateThemeColorMeta();
 
-      const pill = document.getElementById("weatherPill");
-      const btnSunny = document.getElementById("btnSunny");
-      const btnRainy = document.getElementById("btnRainy");
+      document.getElementById("weatherToggleIcon").textContent = mode === "sunny" ? "☀️" : "🌧️";
+      document.getElementById("weatherToggleText").textContent = mode === "sunny" ? "晴天" : "雨天";
+      document.getElementById("weatherToggleBtn").setAttribute(
+        "aria-label", mode === "sunny" ? "目前晴天行程，點一下切換雨天備案" : "目前雨天備案，點一下切換晴天行程");
 
       if (mode === "sunny") {
-        pill.style.transform = "translateX(0%)";
-        btnSunny.style.color = "var(--text-primary)";
-        btnRainy.style.color = "var(--text-muted)";
-        btnSunny.setAttribute("aria-selected", "true");
-        btnRainy.setAttribute("aria-selected", "false");
         document.getElementById("weatherBadgeIcon").textContent = "☀️";
         document.getElementById("weatherBadgeText").textContent = "晴天原定行程｜墨黑朱紅";
         document.getElementById("heroDecorSunny").style.opacity = "0.14";
         document.getElementById("heroDecorRainy").style.opacity = "0";
       } else {
-        pill.style.transform = "translateX(100%)";
-        btnSunny.style.color = "var(--text-muted)";
-        btnRainy.style.color = "var(--text-primary)";
-        btnSunny.setAttribute("aria-selected", "false");
-        btnRainy.setAttribute("aria-selected", "true");
         document.getElementById("weatherBadgeIcon").textContent = "🌧️";
         document.getElementById("weatherBadgeText").textContent = "雨天室內備案｜紺青淺蔥";
         document.getElementById("heroDecorSunny").style.opacity = "0";
@@ -2956,8 +3058,11 @@
       renderItinerary();
       renderMapForCurrentDay(true);
 
-      if (window.scrollY > 240) {
-        window.scrollTo({ top: 185, behavior: "smooth" });
+      if (state.tab === "itinerary") {
+        const content = document.getElementById("itineraryContent");
+        const header = document.getElementById("topWeatherBar");
+        const target = content.offsetTop - header.offsetHeight - 6;
+        if (window.scrollY > target) window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
       }
     }
 
@@ -2967,6 +3072,7 @@
       for (let d = 1; d <= 5; d++) {
         const info = ITINERARY_DATA[d];
         const isActive = state.day === d;
+        const isToday = getTripDayToday() === d;
         const btnStyle = isActive
           ? "accent-bg text-white border border-[var(--gold)] shadow-lg scale-[1.02]"
           : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-subtle)]";
@@ -2977,9 +3083,10 @@
           <button
             type="button"
             onclick="setDay(${d})"
-            class="min-h-[54px] flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all duration-200 active:scale-95 ${btnStyle}"
+            class="relative min-h-[48px] flex flex-col items-center justify-center py-1 px-0.5 rounded-2xl transition-all duration-200 active:scale-95 ${btnStyle}"
             aria-current="${isActive ? 'page' : 'false'}"
           >
+            ${isToday ? `<span class="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1.5 rounded-full text-[9.5px] font-bold leading-[15px] whitespace-nowrap ${isActive ? 'bg-white text-[var(--accent-text)]' : 'accent-bg text-white'}">今天</span>` : ""}
             <span class="font-serif-jp text-[12px] font-bold leading-none">${info.shortLabel}</span>
             <span class="text-[9.5px] mt-1 leading-none tabular-nums ${dateClass}">${info.dateShort} ${info.weekday}</span>
             <span class="text-[10px] mt-1 leading-none truncate max-w-full px-0.5 ${themeClass}">${info.shortTheme}</span>
@@ -3015,26 +3122,43 @@
           `
           : "";
 
+      const live = getLiveStops(plan.items);
+      const legRow = (text) => `
+            <div class="relative flex gap-2.5 pb-2.5">
+              <div class="flex flex-col items-center shrink-0 w-6">
+                <div class="w-[1.5px] flex-1 rounded-full" style="background-color: var(--timeline-line);"></div>
+              </div>
+              <div class="flex-1 leg-strip"><span class="shrink-0 font-bold">↓</span><span>${text}</span></div>
+            </div>`;
+
       const timelineHtml = plan.items
         .map((item, idx) => {
           const isLast = idx === plan.items.length - 1;
           const pinNumber = idx + 1;
           const foodZone = FOOD_ZONES[item.area];
           const foodCount = foodZone ? foodZone.places.length : 0;
+          const isOptional = /可選/.test(item.tag || "") || /可選/.test(item.title || "");
+          const isNow = live.nowId === item.id;
+          const isNext = !isNow && live.nextId === item.id;
           const tzBadge = item.tz
             ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-black/35 border border-[var(--border-subtle)] text-[var(--text-muted)]">${item.tz}</span>`
             : "";
+          const tParts = String(item.time || "").split(/\s*[–-]\s*/);
+          const timeHtml = tParts.length === 2
+            ? `<span class="font-serif-jp text-[16px] font-bold gold-text tabular-nums leading-none">${tParts[0]}</span><span class="text-[11px] text-[var(--text-muted)] tabular-nums">– ${tParts[1]}</span>`
+            : `<span class="font-serif-jp text-[16px] font-bold gold-text tabular-nums leading-none">${item.time}</span>`;
 
           const webLink = item.webUrl
             ? `<a href="${item.webUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)]">
+                  class="inline-flex items-center gap-1 min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)]">
                  <span>🌐</span><span>${item.webLabel || "官網"}</span>
                </a>`
             : "";
 
           return `
-            <div class="relative flex gap-2.5 ${isLast ? '' : 'pb-4'}">
-              <!-- Numbered Timeline Marker matching Map Pin Number -->
+            ${item.leg ? legRow(item.leg) : ""}
+            <div id="stop-${item.id}" class="relative flex gap-2.5 ${isLast ? '' : 'pb-2.5'}">
+              <!-- Numbered marker = map pin number -->
               <div class="flex flex-col items-center shrink-0 w-6 pt-1.5">
                 <div class="w-6 h-6 rounded-full accent-bg text-white font-serif-jp text-[11.5px] font-bold flex items-center justify-center ring-4 ring-[var(--accent-soft)] z-10 shadow">
                   ${pinNumber}
@@ -3042,66 +3166,55 @@
                 ${isLast ? '' : '<div class="w-[1.5px] flex-1 mt-1.5 rounded-full" style="background-color: var(--timeline-line);"></div>'}
               </div>
 
-              <!-- Interactive Stop Card (Tap anywhere or side button for Action Sheet) -->
+              <!-- Stop card: tap = show on map -->
               <div
                 role="button"
                 tabindex="0"
-                onclick="openSpotActionSheet('${item.id}')"
-                onkeydown="if(event.key==='Enter') openSpotActionSheet('${item.id}')"
-                class="flex-1 lacquer-card rounded-[20px] p-3.5 cursor-pointer active:scale-[0.99] transition-transform hover:border-[var(--accent-border)]"
+                onclick="focusSpotOnBottomMap('${item.id}')"
+                onkeydown="if(event.key==='Enter') focusSpotOnBottomMap('${item.id}')"
+                aria-label="在地圖上看：${escapeHtml(item.title)}"
+                class="flex-1 lacquer-card rounded-[20px] p-3.5 cursor-pointer active:scale-[0.99] transition-transform hover:border-[var(--accent-border)] ${isOptional ? 'card-optional' : ''} ${isNow ? 'card-now' : ''}"
               >
-                <div class="flex items-start justify-between gap-2">
-                  <!-- Left Info -->
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                      <span class="font-serif-jp text-[12.5px] font-bold gold-text tabular-nums">${item.time}</span>
-                      ${tzBadge}
-                      <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">${item.tag}</span>
-                    </div>
-                    <h3 class="font-serif-jp text-[15px] font-bold leading-snug text-[var(--text-primary)] tracking-wide">
-                      ${item.title}
-                    </h3>
-                  </div>
-
-                  <!-- Prominent Side Option Button -->
-                  <button
-                    type="button"
-                    onclick="event.stopPropagation(); openSpotActionSheet('${item.id}')"
-                    class="shrink-0 min-h-[38px] px-2.5 py-1.5 rounded-xl accent-soft-bg flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
-                    aria-label="開啟地圖與附近美食選項"
-                  >
-                    <span class="text-[12px] leading-none">🗺️🍜</span>
-                    <span class="text-[10px] font-bold gold-text leading-none mt-0.5">選項</span>
-                  </button>
+                <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                  ${timeHtml}
+                  ${tzBadge}
+                  <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">${item.tag}</span>
+                  ${isNow ? '<span class="now-badge">● 進行中</span>' : ''}
+                  ${isNext ? '<span class="next-badge">下一站</span>' : ''}
                 </div>
+                <h3 class="font-serif-jp text-[15px] font-bold leading-snug text-[var(--text-primary)] tracking-wide">
+                  ${item.title}
+                </h3>
 
                 <p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed mt-1.5">${item.desc}</p>
 
-                <!-- Quick Direct Action Pills inside Card -->
-                <div class="mt-2.5 pt-2.5 border-t border-white/[0.06] flex items-center justify-between gap-2 flex-wrap">
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      onclick="event.stopPropagation(); focusSpotOnBottomMap('${item.id}')"
-                      class="inline-flex items-center gap-1 min-h-[32px] px-2.5 py-1 rounded-lg bg-black/30 border border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-primary)] active:scale-95 transition-transform"
-                    >
-                      <span>🗺️</span><span>看地圖</span>
-                    </button>
-                    <button
-                      type="button"
-                      onclick="event.stopPropagation(); openFoodBottomSheet('${item.area}', '${escapeJs(item.title)}')"
-                      class="inline-flex items-center gap-1 min-h-[32px] px-2.5 py-1 rounded-lg bg-[var(--gold-soft)] border border-[var(--border-card)] text-[11px] font-semibold gold-text active:scale-95 transition-transform"
-                    >
-                      <span>🍜</span><span>附近美食 (${foodCount})</span>
-                    </button>
-                    ${webLink}
-                  </div>
+                <!-- Two actions: navigate / nearby food -->
+                <div class="mt-2.5 pt-2.5 border-t border-[var(--border-subtle)] flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onclick="event.stopPropagation(); openGoogleMapsDirections(${item.lat}, ${item.lng}, '${escapeJs(item.title)}')"
+                    class="inline-flex items-center gap-1 min-h-[34px] px-3 py-1 rounded-lg accent-bg text-white text-[11.5px] font-bold active:scale-95 transition-transform"
+                  >
+                    <span>🧭</span><span>導航</span>
+                  </button>
+                  <button
+                    type="button"
+                    onclick="event.stopPropagation(); openFoodBottomSheet('${item.area}', '${escapeJs(item.title)}')"
+                    class="inline-flex items-center gap-1 min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--gold-soft)] border border-[var(--border-card)] text-[11.5px] font-semibold gold-text active:scale-95 transition-transform"
+                  >
+                    <span>🍜</span><span>附近美食 (${foodCount})</span>
+                  </button>
+                  ${webLink}
                 </div>
               </div>
             </div>
           `;
         })
-        .join("");
+        .join("") + (plan.endLeg ? `
+            <div class="flex gap-2.5 pt-2.5">
+              <div class="shrink-0 w-6"></div>
+              <div class="flex-1 leg-strip"><span class="shrink-0 font-bold">↓</span><span>${plan.endLeg}</span></div>
+            </div>` : "");
 
       const transportList = plan.transport
         .map((t) => `<li class="flex gap-2"><span class="accent-text font-bold">◆</span><span>${t}</span></li>`)
@@ -3125,7 +3238,7 @@
               <span class="gold-text font-semibold">主要動線：</span>${plan.route}
             </div>
             <p class="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
-              <span>💡</span><span>點選任一行程或右側「🗺️🍜 選項」，即可定位地圖、開 Google Maps 或查附近美食評分</span>
+              <span>💡</span><span>點卡片＝在地圖上看位置；按「🧭 導航」＝直接開 Google Maps 路線</span>
             </p>
             ${rainBannerHtml}
           </div>
@@ -3553,8 +3666,6 @@
     }
 
     function focusSpotOnBottomMap(spotId) {
-      if (state.tab !== "itinerary") setTab("itinerary", false);
-
       const entry = stopMarkersMap[spotId];
       if (!entry || !kyotoMap) return;
 
@@ -3584,7 +3695,7 @@
       const place = zone.places[placeIndex];
 
       closeModal("foodBottomSheet");
-      if (state.tab !== "itinerary") setTab("itinerary", false);
+      if (state.tab !== "map") setTab("map");
 
       state.pinnedFood = { ...place, area: zoneKey };
 
@@ -3824,7 +3935,12 @@
        --------------------------------------------------------- */
     function setTab(tabName, scrollTop = true) {
       state.tab = tabName;
-      const mainViews = ["itinerary", "info", "checklist", "wishlist"];
+      const mainViews = ["itinerary", "map", "info", "checklist", "wishlist"];
+
+      // Day selector + sunny/rainy toggle only matter for itinerary and map
+      const dwRow = document.getElementById("dayWeatherRow");
+      if (dwRow) dwRow.classList.toggle("hidden", !(tabName === "itinerary" || tabName === "map"));
+      document.getElementById("topWeatherBar").classList.remove("is-collapsed");
 
       mainViews.forEach((v) => {
         const el = document.getElementById(`view-${v}`);
@@ -3844,45 +3960,36 @@
         }
       });
 
-      if (tabName === "itinerary" && kyotoMap) {
-        setTimeout(() => kyotoMap.invalidateSize(), 120);
-      }
-
-      if (scrollTop) {
+      if (tabName === "map") {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        sizeMapToScreen();
+        if (kyotoMap) setTimeout(() => kyotoMap.invalidateSize(), 120);
+      } else if (scrollTop) {
         window.scrollTo({ top: 0, behavior: "instant" });
       }
     }
 
-    function jumpToMapTab() {
-      if (state.tab !== "itinerary") {
-        setTab("itinerary", false);
-      }
-      // Highlight map tab icon visually
-      ["itinerary", "info", "checklist", "wishlist"].forEach((b) => {
-        const btn = document.getElementById(`tabBtn-${b}`);
-        if (btn) {
-          btn.classList.remove("gold-text");
-          btn.classList.add("text-[var(--text-muted)]");
-        }
-      });
-      const mapBtn = document.getElementById("tabBtn-map");
-      if (mapBtn) {
-        mapBtn.classList.add("gold-text");
-        mapBtn.classList.remove("text-[var(--text-muted)]");
-      }
+    /* Map page: make the map fill whatever height is left on screen */
+    function sizeMapToScreen() {
+      const mapDiv = document.getElementById("kyotoMap");
+      const view = document.getElementById("view-map");
+      if (!mapDiv || !view || view.classList.contains("hidden")) return;
+      const header = document.getElementById("topWeatherBar");
+      const nav = document.getElementById("bottomTabNav");
+      const wrapper = document.getElementById("mapCardWrapper");
+      const others = wrapper.offsetHeight - mapDiv.offsetHeight;
+      const free = window.innerHeight - header.offsetHeight - (nav ? nav.offsetHeight : 80) - others - 24;
+      mapDiv.style.height = Math.max(300, free) + "px";
+      if (kyotoMap) kyotoMap.invalidateSize();
+    }
 
-      scrollToMapSection();
-      setTimeout(() => {
-        if (kyotoMap) kyotoMap.invalidateSize();
-      }, 300);
+    function jumpToMapTab() {
+      setTab("map");
     }
 
     function scrollToMapSection() {
-      const mapEl = document.getElementById("mapSection");
+      if (state.tab !== "map") setTab("map");
       const wrapper = document.getElementById("mapCardWrapper");
-      if (mapEl) {
-        mapEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
       if (wrapper) {
         wrapper.classList.remove("map-focus-ring");
         void wrapper.offsetWidth;
@@ -4287,13 +4394,41 @@
       syncStickyOffset();
       window.addEventListener("resize", () => {
         syncStickyOffset();
+        sizeMapToScreen();
         if (kyotoMap) kyotoMap.invalidateSize();
       });
+
+      // We decide the start position ourselves (today's stop), not the browser
+      try { history.scrollRestoration = "manual"; } catch (e) {}
+
+      // Fold the brand row away once the user scrolls down
+      const headerEl = document.getElementById("topWeatherBar");
+      window.addEventListener("scroll", () => {
+        const fold = window.scrollY > 70;
+        if (fold !== headerEl.classList.contains("is-collapsed")) headerEl.classList.toggle("is-collapsed", fold);
+      }, { passive: true });
+
+      // During the trip (Japan time 2027/02/02-02/06) always open on today
+      const todayDay = getTripDayToday();
+      if (todayDay) state.day = todayDay;
 
       initKyotoMap();
       setWeather(state.weather, false);
       applyThemeUI();
       setTab("itinerary");
+
+      // ...and bring the stop happening now (or the next one) into view
+      if (todayDay) {
+        const live = getLiveStops(getCurrentDayPlan().items);
+        const id = live.nowId || live.nextId;
+        const el = id && document.getElementById("stop-" + id);
+        if (el) setTimeout(() => {
+          const top = el.getBoundingClientRect().top + window.scrollY - headerEl.offsetHeight - 70;
+          window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+        }, 600);
+      }
+      // Keep "now / next" markers fresh while the page stays open
+      setInterval(() => { if (getTripDayToday() && state.tab === "itinerary") { renderDaySelector(); renderItinerary(); } }, 5 * 60 * 1000);
       renderChecklist();
       initWishlist();
       updateCountdown();
