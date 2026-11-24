@@ -55,11 +55,14 @@
       --bg-segment-pill: #252834;
       --text-primary: #F3EFE8;
       --text-secondary: #B7B3AA;
-      --text-muted: #7C7F8A;
-      --accent: #D94B38;            /* 京都鳥居朱紅 */
+      --text-muted: #9A9DA8;
+      --accent: #C23F2D;            /* 京都鳥居朱紅（白字底色用） */
       --accent-glow: rgba(217, 75, 56, 0.30);
       --accent-soft: rgba(217, 75, 56, 0.14);
       --accent-border: rgba(217, 75, 56, 0.40);
+      --accent-text: #F07563;       /* 朱紅文字（深底） */
+      --ok-text: #6EE7B7;
+      --warn-text: #FDA4AF;
       --gold: #D4AF6A;              /* 金箔暖金 */
       --gold-soft: rgba(212, 175, 106, 0.14);
       --border-card: rgba(212, 175, 106, 0.19);
@@ -89,11 +92,12 @@
       --bg-segment-pill: #1C2C45;
       --text-primary: #EDF3FA;
       --text-secondary: #A9BDD2;
-      --text-muted: #6C829B;
-      --accent: #5BA4CF;            /* 淺蔥藍 */
+      --text-muted: #8EA3BA;
+      --accent: #2E73A3;            /* 淺蔥藍（白字底色用） */
       --accent-glow: rgba(91, 164, 207, 0.34);
       --accent-soft: rgba(91, 164, 207, 0.15);
       --accent-border: rgba(91, 164, 207, 0.42);
+      --accent-text: #7EC0E6;
       --gold: #B8C7D9;              /* 月銀 */
       --gold-soft: rgba(184, 199, 217, 0.13);
       --border-card: rgba(120, 174, 209, 0.23);
@@ -127,12 +131,15 @@
       --bg-segment-pill: #FFFFFF;
       --text-primary: #2A2420;
       --text-secondary: #5E554B;
-      --text-muted: #8A8176;
-      --accent: #C8402E;
+      --text-muted: #6B6258;
+      --accent: #B0381F;
       --accent-glow: rgba(200, 64, 46, 0.22);
       --accent-soft: rgba(200, 64, 46, 0.10);
       --accent-border: rgba(200, 64, 46, 0.35);
-      --gold: #96702C;
+      --accent-text: #B0381F;
+      --ok-text: #1F7A4D;
+      --warn-text: #B42330;
+      --gold: #7D5D20;
       --gold-soft: rgba(150, 112, 44, 0.12);
       --border-card: rgba(150, 112, 44, 0.24);
       --border-subtle: rgba(150, 112, 44, 0.14);
@@ -159,12 +166,13 @@
       --bg-segment-pill: #FFFFFF;
       --text-primary: #1C2A3A;
       --text-secondary: #4A5D72;
-      --text-muted: #7A8B9E;
-      --accent: #2F7FB0;
+      --text-muted: #56687C;
+      --accent: #23679A;
       --accent-glow: rgba(47, 127, 176, 0.22);
       --accent-soft: rgba(47, 127, 176, 0.10);
       --accent-border: rgba(47, 127, 176, 0.35);
-      --gold: #4F6D8C;
+      --accent-text: #23679A;
+      --gold: #3E5875;
       --gold-soft: rgba(79, 109, 140, 0.12);
       --border-card: rgba(47, 127, 176, 0.22);
       --border-subtle: rgba(47, 127, 176, 0.13);
@@ -191,7 +199,9 @@
     html[data-theme="light"] .border-white\/\[0\.08\] { border-color: rgba(0, 0, 0, 0.08); }
     html[data-theme="light"] .text-sky-300 { color: #1F6FA3; }
     html[data-theme="light"] .text-amber-300,
-    html[data-theme="light"] .text-amber-300\/90 { color: #9A6A10; }
+    html[data-theme="light"] .text-amber-300\/90 { color: #7A5208; }
+    html[data-theme="light"] .text-red-400 { color: #B42330; }
+    html[data-theme="light"] .hanko-seal { color: #A8321F; }
     html[data-theme="light"] .text-\[\#F2DCAB\] { color: var(--highlight-text); }
     html[data-theme="light"] .bg-\[\#181B25\]\/95 { background-color: rgba(255, 253, 248, 0.96); }
     html[data-theme="light"] .plaque-card { box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
@@ -261,7 +271,7 @@
     }
 
     .accent-bg { background-color: var(--accent); transition: background-color 0.35s ease; }
-    .accent-text { color: var(--accent); transition: color 0.35s ease; }
+    .accent-text { color: var(--accent-text); transition: color 0.35s ease; }
     .gold-text { color: var(--gold); transition: color 0.35s ease; }
     .accent-soft-bg {
       background-color: var(--accent-soft);
@@ -3313,7 +3323,7 @@
                 <span class="gold-text">🕒</span>
                 <span>${place.hours}</span>
               </div>
-              ${place.check ? `<div class="text-[11px] leading-snug ${place.checkWarn ? "text-rose-300 font-semibold" : "text-emerald-300"}">${place.checkWarn ? "⚠️" : "✅"} ${escapeHtml(place.check)}</div>` : ""}
+              ${place.check ? `<div class="text-[11px] leading-snug ${place.checkWarn ? "text-[var(--warn-text)] font-semibold" : "text-[var(--ok-text)]"}">${place.checkWarn ? "⚠️" : "✅"} ${escapeHtml(place.check)}</div>` : ""}
               <div class="flex flex-wrap gap-1.5">${tagsHtml}</div>
 
               <!-- Diner Review Summary -->
@@ -3596,7 +3606,7 @@
           <div style="font-size:11px; color:var(--gold); font-weight:700;">🍜 推薦美食 ・ ★ ${place.rating} (${place.reviews})</div>
           <div style="font-family:'Noto Serif TC',serif; font-size:14.5px; font-weight:700; margin-top:2px;">${escapeHtml(place.name)}</div>
           <div style="font-size:11px; color:var(--text-secondary); margin-top:3px;">🕒 ${place.hours}</div>
-          ${place.check ? `<div style="font-size:11px; margin-top:3px; font-weight:700; color:${place.checkWarn ? "#fda4af" : "#6ee7b7"};">${place.checkWarn ? "⚠️" : "✅"} ${escapeHtml(place.check)}</div>` : ""}
+          ${place.check ? `<div style="font-size:11px; margin-top:3px; font-weight:700; color:${place.checkWarn ? "var(--warn-text)" : "var(--ok-text)"};">${place.checkWarn ? "⚠️" : "✅"} ${escapeHtml(place.check)}</div>` : ""}
           <div style="font-size:11px; color:var(--text-primary); margin-top:5px; line-height:1.4;">${escapeHtml(place.summary)}</div>
           <div style="margin-top:9px;">
             <a href="${gmapUrl}" target="_blank" rel="noopener noreferrer"
@@ -3720,7 +3730,7 @@
       });
 
       userLocationMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 900 })
-        .bindPopup(`<div style="font-size:12px;font-weight:700;color:var(--accent);">📡 ${escapeHtml(label)}</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>`)
+        .bindPopup(`<div style="font-size:12px;font-weight:700;color:var(--accent-text);">📡 ${escapeHtml(label)}</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>`)
         .addTo(kyotoMap);
 
       kyotoMap.invalidateSize();
