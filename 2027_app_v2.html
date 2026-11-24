@@ -331,6 +331,11 @@
     }
     .leaflet-control-attribution a { color: #9DA4B2 !important; }
 
+    /* Dark style for the light OSM tiles (only tiles, not pins/routes) */
+    .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(180deg) brightness(0.88) contrast(0.92) saturate(0.55);
+    }
+
     /* Custom Numbered Itinerary Map Pin */
     .kyoto-pin {
       width: 30px;
@@ -3116,10 +3121,10 @@
           scrollWheelZoom: false
         });
 
-        // CartoDB Dark Matter Tiles (Matches Japanese Dark Aesthetic)
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          attribution: "&copy; OpenStreetMap &copy; CARTO",
-          subdomains: "abcd",
+        // OpenStreetMap tiles (no API key needed), darkened via CSS on .leaflet-tile-pane.
+        // CARTO dark tiles were replaced: they show "API KEY REQUIRED" on github.io.
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors",
           maxZoom: 19
         }).addTo(kyotoMap);
 
